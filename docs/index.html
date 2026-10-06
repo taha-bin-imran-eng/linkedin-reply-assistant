@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reply Assistant · Every DM answered, in your voice</title>
+<meta name="description" content="A free Chrome extension that reads your LinkedIn conversations and drafts the reply you'd write. Recruiters, leads, coaching clients, pitches. You press Send.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07070d;
+    --bg-2: #0d0d18;
+    --line: rgba(255,255,255,.08);
+    --line-2: rgba(255,255,255,.14);
+    --fg: #f4f4f8;
+    --muted: #a3a3b8;
+    --dim: #6d6d85;
+    --violet: #7c5cff;
+    --blue: #3b82f6;
+    --cyan: #5ee7ff;
+    --grad: linear-gradient(100deg, #3b6bff 0%, #6d4bff 55%, #b04bff 100%);
+    --radius: 22px;
+    --serif: "Instrument Serif", Georgia, serif;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; overflow-x: clip; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: clip; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: min(1180px, 100% - 32px); margin: 0 auto; }
+  .serif { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; }
+  .grad-text { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* ---------- nav ---------- */
+  nav.top { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(18px) saturate(140%); background: rgba(7,7,13,.55); border-bottom: 1px solid var(--line); }
+  nav.top .wrap { display: flex; align-items: center; gap: 28px; height: 68px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand svg { width: 28px; height: 28px; border-radius: 8px; }
+  .navlinks { display: flex; gap: 26px; margin-left: auto; font-size: 14px; color: var(--muted); }
+  .navlinks a:hover { color: var(--fg); }
+  .btn { display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 22px; border-radius: 999px; font-weight: 600; font-size: 15px; border: 1px solid var(--line-2); background: rgba(255,255,255,.04); transition: transform .2s, background .2s, box-shadow .2s; white-space: nowrap; }
+  .btn:hover { background: rgba(255,255,255,.08); transform: translateY(-1px); }
+  .btn.primary { border: 0; background: var(--grad); box-shadow: 0 10px 40px -10px rgba(109,75,255,.8), inset 0 1px 0 rgba(255,255,255,.25); }
+  .btn.primary:hover { box-shadow: 0 16px 50px -10px rgba(109,75,255,.95), inset 0 1px 0 rgba(255,255,255,.3); }
+  .btn.sm { height: 38px; padding: 0 16px; font-size: 14px; }
+  .btn svg { width: 18px; height: 18px; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: 56px 0 0; text-align: center; isolation: isolate; overflow-x: clip; }
+  .hero::before { content: ""; position: absolute; inset: -200px -10% auto; height: 900px; z-index: -1;
+    background:
+      radial-gradient(40% 35% at 50% 30%, rgba(109,75,255,.35), transparent 70%),
+      radial-gradient(30% 30% at 25% 20%, rgba(59,107,255,.25), transparent 70%),
+      radial-gradient(30% 30% at 78% 25%, rgba(176,75,255,.22), transparent 70%); }
+  .grid-bg { position: absolute; inset: 0; z-index: -1; opacity: .35;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px; mask-image: radial-gradient(60% 50% at 50% 30%, #000 20%, transparent 75%); }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(255,255,255,.04); font-size: 13px; color: var(--muted); }
+  .eyebrow b { padding: 3px 10px; border-radius: 999px; background: var(--grad); color: #fff; font-weight: 600; font-size: 12px; }
+  h1 { margin: 26px auto 0; max-width: 980px; font-family: var(--serif); font-weight: 400; font-size: clamp(46px, 7.4vw, 92px); line-height: .98; letter-spacing: -0.025em; }
+  h1 em { font-style: italic; }
+  .lede { margin: 20px auto 0; max-width: 640px; font-size: clamp(17px, 2vw, 20px); color: var(--muted); }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+  .fine { margin-top: 16px; font-size: 13px; color: var(--dim); }
+
+  /* ---------- stage: floating DMs blurring toward the panel ---------- */
+  .stage { position: relative; height: 720px; margin-top: -8px; }
+  .stage::after { content: ""; position: absolute; left: 50%; top: 50%; width: 820px; height: 640px; transform: translate(-50%,-50%); z-index: 1;
+    background: radial-gradient(closest-side, rgba(7,7,13,.92), rgba(7,7,13,.55) 55%, transparent); pointer-events: none; }
+  .dm { position: absolute; z-index: 0; width: 290px; padding: 14px 16px; text-align: left; border-radius: 18px; border: 1px solid var(--line-2);
+    background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025)); backdrop-filter: blur(8px);
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,.7); filter: blur(var(--blur, 0px)); opacity: var(--fade, 1);
+    animation: drift 9s ease-in-out infinite; animation-delay: var(--delay, 0s); }
+  .dm header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .dm .av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .dm .who { font-size: 13px; font-weight: 600; line-height: 1.2; }
+  .dm .who small { display: block; font-weight: 400; color: var(--dim); font-size: 11.5px; }
+  .dm .tag { margin-left: auto; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .dm p { margin: 0; font-size: 13.5px; line-height: 1.45; color: #d6d6e4; }
+  .t-green { color: #6ee7a8; border-color: rgba(110,231,168,.35); background: rgba(110,231,168,.08); }
+  .t-amber { color: #fbbf5a; border-color: rgba(251,191,90,.35); background: rgba(251,191,90,.08); }
+  .t-red { color: #ff8a9a; border-color: rgba(255,138,154,.35); background: rgba(255,138,154,.08); }
+  .t-violet { color: #c4b2ff; border-color: rgba(196,178,255,.35); background: rgba(196,178,255,.08); }
+  .t-cyan { color: #7ee8ff; border-color: rgba(126,232,255,.35); background: rgba(126,232,255,.08); }
+  @keyframes drift { 0%,100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+
+  /* ---------- the panel (recreated UI) ---------- */
+  .panel-glow { position: absolute; left: 50%; top: 50%; width: 560px; height: 560px; transform: translate(-50%,-50%); z-index: 1; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(109,75,255,.45), transparent); filter: blur(30px); }
+  .panel { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: 2; width: 430px; text-align: left; color: #14142b;
+    border-radius: 26px; padding: 18px; background: linear-gradient(180deg, #ffffff, #f6f5ff);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.6), 0 40px 120px -30px rgba(109,75,255,.75), 0 30px 60px -30px rgba(0,0,0,.8); }
+  .p-head { display: flex; align-items: center; gap: 10px; }
+  .p-logo { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #f1edff; }
+  .p-logo svg { width: 18px; height: 18px; }
+  .p-title { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .p-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #fff3dc; color: #8a5300; font-size: 12px; font-weight: 600; }
+  .p-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
+  .p-icons { margin-left: auto; display: flex; gap: 14px; color: #8b8ba3; }
+  .p-icons svg { width: 18px; height: 18px; }
+  .p-ctx { display: flex; align-items: center; gap: 8px; margin: 14px 0 12px; padding: 10px 12px; border-radius: 14px; background: #f3f2fb; font-size: 12.5px; color: #6b6b85; }
+  .p-ctx b { color: #14142b; font-weight: 600; }
+  .p-ctx .det { margin-left: auto; color: #3b5bff; font-weight: 600; }
+  .p-tech { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; font-size: 11.5px; }
+  .p-tech span { padding: 3px 9px; border-radius: 999px; background: #f1f0f8; border: 1px solid #e5e3f2; color: #4b4b66; }
+  .p-tech span.mine { background: #e7f7ee; border-color: #bfe8d0; color: #0b6b3a; }
+  .p-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .p-select { flex: 1; display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 12px; border: 1px solid #e3e1f0; font-size: 13.5px; }
+  .p-select svg:last-child { margin-left: auto; width: 14px; color: #8b8ba3; }
+  .p-new { height: 38px; padding: 0 12px; border-radius: 12px; background: #f0eeff; color: #3b5bff; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .p-draft { position: relative; min-height: 132px; padding: 14px; border-radius: 16px; border: 1.5px solid #8ea2ff; background: #fff; font-size: 14px; line-height: 1.55;
+    box-shadow: 0 0 0 4px rgba(91,110,255,.09); }
+  .caret { display: inline-block; width: 2px; height: 1.1em; background: #5b6eff; vertical-align: -3px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .p-count { position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: #9a9ab0; }
+  .p-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0; }
+  .p-chips span { padding: 5px 9px; border-radius: 999px; border: 1px solid #e6e4f2; font-size: 11.5px; background: #fff; white-space: nowrap; }
+  .p-actions { display: flex; gap: 8px; }
+  .p-insert { flex: 1; height: 44px; border-radius: 999px; background: var(--grad); color: #fff; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 12px 30px -10px rgba(91,75,255,.7); }
+  .p-copy { height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #e3e1f0; display: flex; align-items: center; font-weight: 600; font-size: 14px; background: #fff; }
+  .p-foot { margin: 12px 2px 0; font-size: 11.5px; color: #8b8ba3; display: flex; gap: 6px; align-items: center; }
+
+  /* ---------- sections ---------- */
+  section { padding: 120px 0; position: relative; }
+  .kicker { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  h2 { margin: 14px 0 0; font-family: var(--serif); font-weight: 400; font-size: clamp(40px, 5.4vw, 68px); line-height: 1.02; letter-spacing: -0.02em; }
+  h2 em { font-style: italic; }
+  .sub { margin-top: 18px; max-width: 620px; color: var(--muted); font-size: 18px; }
+  .center { text-align: center; }
+  .center .sub { margin-inline: auto; }
+
+  .card { position: relative; border-radius: var(--radius); border: 1px solid var(--line); background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015)); padding: 30px; overflow: hidden; }
+  .card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(180deg, rgba(255,255,255,.14), transparent 60%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+
+  /* audiences */
+  .aud { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 56px; }
+  .aud .card { padding: 40px; min-height: 420px; }
+  .aud h3 { margin: 18px 0 10px; font-family: var(--serif); font-weight: 400; font-size: 38px; line-height: 1.05; }
+  .aud p { color: var(--muted); margin: 0 0 22px; }
+  .aud ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .aud li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+  .aud li::before { content: ""; flex: none; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%; background: var(--grad); -webkit-mask: radial-gradient(circle at center, #000 38%, transparent 40%), linear-gradient(#000 0 0); mask: none; box-shadow: inset 0 0 0 5px rgba(7,7,13,.85); }
+  .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--muted); }
+  .pill.new { color: #fff; border: 0; background: var(--grad); }
+  .aud .glow { position: absolute; right: -120px; bottom: -120px; width: 340px; height: 340px; border-radius: 50%; filter: blur(60px); opacity: .45; }
+
+  /* conversations */
+  .tabs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 40px; }
+  .tab { height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; color: var(--muted); font: 500 14px var(--sans); cursor: pointer; }
+  .tab[aria-selected="true"] { color: #fff; border-color: transparent; background: var(--grad); }
+  .convo { display: grid; grid-template-columns: 1fr 64px 1fr; align-items: center; gap: 0; margin-top: 36px; }
+  .convo .card { min-height: 220px; }
+  .convo .label { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; display: flex; justify-content: space-between; }
+  .convo .msg { font-size: 17px; line-height: 1.55; color: #e3e3ee; }
+  .convo .reply { border-color: rgba(124,92,255,.35); background: linear-gradient(180deg, rgba(124,92,255,.14), rgba(59,107,255,.04)); }
+  .arrow { display: grid; place-items: center; color: var(--violet); }
+  .arrow svg { width: 28px; height: 28px; }
+  [role="tabpanel"][hidden] { display: none; }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; counter-reset: s; }
+  .steps .card { padding: 34px; }
+  .steps .n { font-family: var(--serif); font-size: 64px; line-height: 1; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .steps h3, .feat h3 { margin: 16px 0 8px; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+  .steps p, .feat p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* features */
+  .feat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
+  .feat .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgba(124,92,255,.14); border: 1px solid rgba(124,92,255,.3); color: #c4b2ff; }
+  .feat .ico svg { width: 22px; height: 22px; }
+
+  /* install */
+  .install { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: start; margin-top: 56px; }
+  .ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; counter-reset: i; }
+  .ol li { counter-increment: i; display: flex; gap: 16px; padding: 18px 20px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
+  .ol li::before { content: counter(i); flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--grad); }
+  .ol b { display: block; margin-bottom: 2px; }
+  .ol span { color: var(--muted); font-size: 14.5px; }
+  code { font: 13px ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 2px 7px; border-radius: 6px; background: rgba(255,255,255,.07); border: 1px solid var(--line); color: #e8e8f2; }
+  .privacy { padding: 40px; }
+  .privacy h3 { margin: 18px 0 14px; font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 1.1; }
+  .privacy p { color: var(--muted); margin: 0 0 12px; }
+
+  /* faq */
+  .faq { max-width: 820px; margin: 48px auto 0; }
+  details { border-bottom: 1px solid var(--line); padding: 22px 4px; }
+  summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 20px; font-size: 18px; font-weight: 500; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--violet); font-size: 24px; line-height: 1; transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { color: var(--muted); margin: 12px 0 0; max-width: 700px; }
+
+  /* final cta */
+  .final { text-align: center; padding: 140px 0; overflow: hidden; }
+  .final::before { content: ""; position: absolute; left: 50%; top: 50%; width: 900px; height: 500px; transform: translate(-50%,-50%); z-index: -1;
+    background: radial-gradient(closest-side, rgba(109,75,255,.35), transparent); filter: blur(20px); }
+  footer { border-top: 1px solid var(--line); padding: 36px 0 48px; color: var(--dim); font-size: 13px; }
+  footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wrap: wrap; }
+  footer a:hover { color: var(--fg); }
+
+  /* reveal on scroll */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  @media (max-width: 980px) {
+    .navlinks { display: none; }
+    .aud, .install { grid-template-columns: 1fr; }
+    .steps, .feat { grid-template-columns: 1fr 1fr; }
+    .dm.far-out { display: none; }
+  }
+  @media (max-width: 720px) {
+    .steps, .feat { grid-template-columns: 1fr; }
+    .convo { grid-template-columns: 1fr; gap: 12px; }
+    .arrow { transform: rotate(90deg); height: 36px; }
+    .stage { height: 700px; }
+    .dm { display: none; }
+    .panel { width: min(430px, 100% - 24px); padding: 14px; }
+    .p-title { font-size: 15px; white-space: nowrap; }
+    .p-badge { font-size: 11px; padding: 3px 8px; white-space: nowrap; }
+    .p-icons { gap: 8px; }
+    .p-ctx { flex-wrap: wrap; row-gap: 2px; }
+    .p-ctx b { white-space: nowrap; }
+    .stage { height: 640px; }
+    nav.top .btn.ghost { display: none; }
+    section { padding: 88px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dm, .caret { animation: none; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#3b6bff"/><stop offset=".6" stop-color="#6d4bff"/><stop offset="1" stop-color="#b04bff"/></linearGradient>
+  </defs>
+  <symbol id="logo" viewBox="0 0 128 128">
+    <rect width="128" height="128" rx="28" fill="url(#g)"/>
+    <path d="M42 26H86A18 18 0 0 1 104 44V70A18 18 0 0 1 86 88H60L38 106V88H42A18 18 0 0 1 24 70V44A18 18 0 0 1 42 26Z" fill="#fff"/>
+    <path d="M64 35C66.2 48.5 69.5 52 82 57C69.5 62 66.2 65.5 64 79C61.8 65.5 58.5 62 46 57C58.5 52 61.8 48.5 64 35Z" fill="#6d4bff"/>
+  </symbol>
+  <symbol id="spark" viewBox="0 0 24 24"><path fill="currentColor" d="M11 2.5l1.7 4.8 4.8 1.7-4.8 1.7L11 15.5 9.3 10.7 4.5 9l4.8-1.7zM18 13l.9 2.6 2.6.9-2.6.9L18 20l-.9-2.6-2.6-.9 2.6-.9z"/></symbol>
+  <symbol id="chrome" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8h9M8.5 14l-4.5 7.5M15.5 14l-4.5 8" stroke="currentColor" stroke-width="2" fill="none"/></symbol>
+  <symbol id="github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><svg><use href="#logo"/></svg>Reply Assistant</a>
+    <div class="navlinks">
+      <a href="#who">Who it's for</a><a href="#examples">Examples</a><a href="#features">Features</a><a href="#install">Install</a><a href="#faq">FAQ</a>
+    </div>
+    <a class="btn sm ghost" data-repo href="#"><svg><use href="#github"/></svg>GitHub</a>
+    <a class="btn sm primary" data-download href="#">Download</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="grid-bg"></div>
+  <div class="wrap">
+    <span class="eyebrow"><b>Free</b> Chrome extension for LinkedIn · open source</span>
+    <h1>Every DM answered.<br><em class="grad-text">In your voice.</em></h1>
+    <p class="lede">Recruiters, client leads, coaching inquiries, sales pitches. Reply Assistant reads your LinkedIn conversation, works out what they want, and drafts the reply you'd write. You press Send.</p>
+    <div class="cta">
+      <a class="btn primary" data-download href="#"><svg><use href="#chrome"/></svg>Download for Chrome</a>
+      <a class="btn" data-repo href="#"><svg><use href="#github"/></svg>View on GitHub</a>
+    </div>
+    <p class="fine">Bring your own free Groq key · Nothing is ever sent for you</p>
+  </div>
+
+  <div class="stage" aria-hidden="true">
+    <!-- Messages drift around the edges and blur as they near the panel -->
+    <div class="dm far-out" style="left:2%;top:4%;--delay:-1s">
+      <header><span class="av" style="background:#3b6bff">SK</span><span class="who">Sarah Kim<small>Talent Partner</small></span><span class="tag t-green">Remote role</span></header>
+      <p>We're hiring a Senior Python Engineer, 100% remote, US time zones. Open to a quick chat?</p>
+    </div>
+    <div class="dm" style="left:12%;top:36%;--blur:1.5px;--fade:.8;--delay:-4s">
+      <header><span class="av" style="background:#c0548a">ML</span><span class="who">Maya Lin<small>Workshop attendee</small></span><span class="tag t-violet">Coaching inquiry</span></header>
+      <p>Loved your talk! What does 1:1 coaching cost, and do you have space this month?</p>
+    </div>
+    <div class="dm far-out" style="left:1%;top:68%;--delay:-2s">
+      <header><span class="av" style="background:#e07b39">PN</span><span class="who">Priya Nair<small>Founder, ShipFast AI</small></span><span class="tag t-red">Pitch</span></header>
+      <p>We cut code review time by 60% with AI agents. Got 15 minutes for a demo?</p>
+    </div>
+    <div class="dm" style="left:22%;top:72%;--blur:3px;--fade:.55;--delay:-6s">
+      <header><span class="av" style="background:#2a9d8f">CW</span><span class="who">Chris Wong<small>Engineering Manager</small></span><span class="tag t-cyan">Follow-up</span></header>
+      <p>Just following up on my note from last week. Still interested?</p>
+    </div>
+    <div class="dm far-out" style="right:2%;top:6%;--delay:-3s">
+      <header><span class="av" style="background:#7c5cff">OH</span><span class="who">Omar Haddad<small>Head of Marketing</small></span><span class="tag t-green">New lead</span></header>
+      <p>Could your studio quote a six-week rebrand? Budget is around $8k.</p>
+    </div>
+    <div class="dm" style="right:11%;top:34%;--blur:1.5px;--fade:.8;--delay:-5s">
+      <header><span class="av" style="background:#d4a017">JL</span><span class="who">Jordan Lee<small>Director of Talent</small></span><span class="tag t-amber">Hybrid</span></header>
+      <p>Lead Engineer, onsite in Austin three days a week. Relocation covered.</p>
+    </div>
+    <div class="dm far-out" style="right:1%;top:66%;--delay:-7s">
+      <header><span class="av" style="background:#4a6fa5">RK</span><span class="who">Ravi Kumar<small>Podcast host</small></span><span class="tag t-violet">Invitation</span></header>
+      <p>Would you join our podcast next month to talk about scaling a small team?</p>
+    </div>
+    <div class="dm" style="right:20%;top:74%;--blur:3px;--fade:.55;--delay:-8s">
+      <header><span class="av" style="background:#8a5cf6">LF</span><span class="who">Lena Fischer<small>Partnerships</small></span><span class="tag t-cyan">Partnership</span></header>
+      <p>Fancy co-hosting a webinar for both our audiences in November?</p>
+    </div>
+
+    <div class="panel-glow"></div>
+    <div class="panel" role="img" aria-label="The Reply Assistant panel drafting a reply to a recruiter">
+      <div class="p-head">
+        <span class="p-logo"><svg style="color:#6d4bff"><use href="#spark"/></svg></span>
+        <span class="p-title">Reply assistant</span>
+        <span class="p-badge">Location unclear</span>
+        <span class="p-icons">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+      </div>
+      <div class="p-ctx">Replying to <b>Daniel Reyes</b> · 1 message read <span class="det">Details ›</span></div>
+      <div class="p-tech"><span class="mine">✓ Python</span><span class="mine">✓ FastAPI</span><span class="mine">✓ AWS</span><span>DAML</span><span>Solidity</span></div>
+      <div class="p-row">
+        <span class="p-select">Location unclear <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+        <span class="p-new">↻ New draft</span>
+      </div>
+      <div class="p-draft"><span id="typed"></span><span class="caret"></span><span class="p-count" id="count">0 words</span></div>
+      <div class="p-chips"><span>✦ Shorter</span><span>☺ Warmer</span><span>▤ More formal</span><span>✆ Ask for a call</span></div>
+      <div class="p-actions"><span class="p-insert">➤ Insert into Daniel's chat</span><span class="p-copy">Copy</span></div>
+      <div class="p-foot">🔒 Nothing is sent until you press Send on LinkedIn.</div>
+    </div>
+  </div>
+</header>
+
+<section id="who">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="kicker">Who it's for</span>
+      <h2>One inbox. <em class="grad-text">Two kinds of busy.</em></h2>
+      <p class="sub">Whether recruiters are chasing you or clients are, the hard part is the same: answering everyone well without spending your day in DMs.</p>
+    </div>
+    <div class="aud">
+      <div class="card reveal">
+        <span class="pill">For job seekers</span>
+        <h3>Say yes to the right roles, gracefully no to the rest.</h3>
+        <p>Set your rules once. Remote only, where you can work, your pay floor. Every recruiter gets the right reply.</p>
+        <ul>
+          <li>Interested and asking smart questions on remote roles</li>
+          <li>A polite "remote only" for hybrid and onsite, no wasted back-and-forth</li>
+          <li>Flags remote roles limited to regions you can't work from</li>
+          <li>Mentions your pay floor only when an offer falls below it</li>
+        </ul>
+        <div class="glow" style="background:#3b6bff"></div>
+      </div>
+      <div class="card reveal">
+        <span class="pill new">New · For business owners & coaches</span>
+        <h3>Turn inbound DMs into booked calls.</h3>
+        <p>Leads, coaching inquiries, partnership offers and pitches, each answered in your voice with the next step built in.</p>
+        <ul>
+          <li>Warm replies to leads that move them toward a call</li>
+          <li>Answers pricing and availability questions from your own details</li>
+          <li>Shares your booking link or portfolio at the right moment</li>
+          <li>Declines vendor pitches kindly, in one line</li>
+        </ul>
+        <div class="glow" style="background:#b04bff"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="examples">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="kicker">See it work</span>
+      <h2>What they sent. <em class="grad-text">What you send.</em></h2>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="0">Remote role</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="1">Hybrid role</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="2">Coaching inquiry</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="3">Sales pitch</button>
+    </div>
+    <div class="reveal">
+      <div class="convo" role="tabpanel">
+        <div class="card"><div class="label"><span>Sarah Kim · Talent Partner</span><span>Received</span></div><p class="msg">Hi Alex, we're building payments infrastructure in Go and Postgres. The Staff Engineer role is fully remote across US time zones. Open to new opportunities?</p></div>
+        <div class="arrow"><svg><use href="#arrow"/></svg></div>
+        <div class="card reply"><div class="label"><span>Your draft</span><span class="grad-text">Remote role</span></div><p class="msg">Hi Sarah, thanks for reaching out. I'm interested and would love to learn more. Could you share the compensation range for the role?</p></div>
+      </div>
+      <div class="convo" role="tabpanel" hidden>
+        <div class="card"><div class="label"><span>Jordan Lee · Director of Talent</span><span>Received</span></div><p class="msg">We're looking for a Lead Engineer to join our team onsite in Austin, three days a week. Relocation is covered. Interested?</p></div>
+        <div class="arrow"><svg><use href="#arrow"/></svg></div>
+        <div class="card reply"><div class="label"><span>Your draft</span><span class="grad-text">Hybrid / onsite</span></div><p class="msg">Hi Jordan, thanks for thinking of me. I'm only considering fully remote roles right now, so please keep me in mind for any remote openings.</p></div>
+      </div>
+      <div class="convo" role="tabpanel" hidden>
+        <div class="card"><div class="label"><span>Maya Lin · Workshop attendee</span><span>Received</span></div><p class="msg">Loved your leadership workshop! What does 1:1 coaching cost, and do you have any space this month?</p></div>
+        <div class="arrow"><svg><use href="#arrow"/></svg></div>
+        <div class="card reply"><div class="label"><span>Your draft</span><span class="grad-text">Coaching inquiry</span></div><p class="msg">Hi Maya, so glad the workshop landed. 1:1 coaching starts at $250 a session and I have two spots open this month. Want to grab a free 20-minute intro call? You can book one here: cal.com/you</p></div>
+      </div>
+      <div class="convo" role="tabpanel" hidden>
+        <div class="card"><div class="label"><span>Priya Nair · Founder</span><span>Received</span></div><p class="msg">We help teams cut code review time by 60% using AI agents. Would you be open to a 15-minute demo next week?</p></div>
+        <div class="arrow"><svg><use href="#arrow"/></svg></div>
+        <div class="card reply"><div class="label"><span>Your draft</span><span class="grad-text">Pitch</span></div><p class="msg">Hi Priya, thank you for reaching out, but it's not something I need right now.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="kicker">How it works</span>
+      <h2>Three clicks. <em class="grad-text">Zero copy-paste.</em></h2>
+    </div>
+    <div class="steps">
+      <div class="card reveal"><div class="n">01</div><h3>Click ✦ Draft</h3><p>It sits right in every LinkedIn chat, in pop-ups and on the Messaging page. Or press Alt+R.</p></div>
+      <div class="card reveal"><div class="n">02</div><h3>It reads the room</h3><p>The whole conversation: who said what, the role, location, pay, tech stack, and what they're actually asking.</p></div>
+      <div class="card reveal"><div class="n">03</div><h3>You stay in control</h3><p>Tweak it with one tap, insert it into the right chat, and press Send yourself.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="kicker">Features</span>
+      <h2>Small tool. <em class="grad-text">Sharp instincts.</em></h2>
+    </div>
+    <div class="feat">
+      <div class="card reveal"><div class="ico"><svg><use href="#spark"/></svg></div><h3>Knows what kind of message it is</h3><p>Remote role, hybrid, lead, coaching inquiry, pitch, follow-up. Each gets the reply it deserves.</p></div>
+      <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><h3>Your templates, your rules</h3><p>Edit what it says for every category, or add your own. Placeholders fill in names and details.</p></div>
+      <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><h3>Spots the tech stack</h3><p>Lists the technologies they mention, ticks the ones you know, and never asks about what they already told you.</p></div>
+      <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><h3>Override anything, per reply</h3><p>"Call me a Backend Engineer." "Mention I'm free Thursday." One line, and it rewrites around it.</p></div>
+      <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><h3>Fast enough to feel instant</h3><p>Runs on Groq's gpt-oss-120b, so a draft lands in about a second and a half.</p></div>
+      <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><h3>Never sends on its own</h3><p>It only fills in the message box. Every word goes out because you pressed Send.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="kicker">Install</span>
+      <h2>Up and running <em class="grad-text">in two minutes.</em></h2>
+    </div>
+    <div class="install">
+      <ol class="ol reveal">
+        <li><div><b>Download and unzip</b><span>Grab the latest release and unzip it into a folder you'll keep.</span></div></li>
+        <li><div><b>Load it in Chrome</b><span>Open <code>chrome://extensions</code>, switch on Developer mode, click <b style="display:inline">Load unpacked</b> and pick the folder.</span></div></li>
+        <li><div><b>Add your free Groq key</b><span>Create one at <code>console.groq.com/keys</code> and paste it into Settings, which opens by itself.</span></div></li>
+        <li><div><b>Tell it about you</b><span>Your role, skills, rules and links. Then open any LinkedIn chat and click ✦ Draft.</span></div></li>
+      </ol>
+      <div class="card privacy reveal">
+        <span class="pill">Privacy</span>
+        <h3>No servers. No accounts. No tracking.</h3>
+        <p>Your key and settings stay in your browser. A conversation is sent to Groq only when you click Draft, and only to write that one reply.</p>
+        <p>The code is open source, so you can read every line of it.</p>
+        <a class="btn" data-repo href="#" style="margin-top:12px"><svg><use href="#github"/></svg>Read the source</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="kicker">FAQ</span>
+      <h2>Questions, <em class="grad-text">answered.</em></h2>
+    </div>
+    <div class="faq">
+      <details><summary>Is it free?</summary><p>Yes. The extension is free and open source, and Groq's free plan covers about three drafts a minute, plenty for a normal inbox.</p></details>
+      <details><summary>Will it send messages for me?</summary><p>Never. It fills in LinkedIn's message box and stops there. You read it, edit it if you like, and press Send.</p></details>
+      <details><summary>Why do I need Developer mode?</summary><p>It's installed straight from GitHub rather than the Chrome Web Store, and Chrome asks for Developer mode to load extensions that way. It takes ten seconds.</p></details>
+      <details><summary>How do I update it?</summary><p>Download the new release, unzip it over the same folder, and click reload on the extension's card. Your settings carry over.</p></details>
+      <details><summary>Does it work in Edge or Brave?</summary><p>They're built on Chrome and load extensions the same way, so it should, though it's only tested in Chrome.</p></details>
+      <details><summary>Is it affiliated with LinkedIn?</summary><p>No. It's an independent open-source tool that helps you write replies on linkedin.com.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap reveal">
+    <h2>Your inbox, <em class="grad-text">handled.</em></h2>
+    <p class="sub" style="margin-inline:auto">Free, open source, and two minutes to set up.</p>
+    <div class="cta"><a class="btn primary" data-download href="#"><svg><use href="#chrome"/></svg>Download for Chrome</a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Reply Assistant · Open source · Not affiliated with or endorsed by LinkedIn.</span>
+    <span><a data-repo href="#">GitHub</a> · <a data-repo-path="/blob/main/LICENSE" href="#">License</a></span>
+  </div>
+</footer>
+
+<script>
+  // Set these once: every Download / GitHub link on the page uses them.
+  const REPO = "https://github.com/taha-bin-imran-eng/linkedin-reply-assistant";
+  const DOWNLOAD = REPO + "/releases/latest/download/linkedin-reply-assistant.zip";
+  document.querySelectorAll("[data-repo]").forEach((a) => (a.href = REPO));
+  document.querySelectorAll("[data-repo-path]").forEach((a) => (a.href = REPO + a.dataset.repoPath));
+  document.querySelectorAll("[data-download]").forEach((a) => (a.href = DOWNLOAD));
+
+  // Example tabs
+  const tabs = [...document.querySelectorAll(".tab")];
+  const panels = [...document.querySelectorAll('[role="tabpanel"]')];
+  tabs.forEach((t) => t.addEventListener("click", () => {
+    tabs.forEach((x) => x.setAttribute("aria-selected", String(x === t)));
+    panels.forEach((p, i) => (p.hidden = String(i) !== t.dataset.tab));
+  }));
+
+  // Type the draft into the hero panel
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const text = "Hi Daniel, thanks for reaching out. The role sounds interesting. Could you let me know if it can be done fully remotely, and what the compensation range looks like?";
+  const typed = document.getElementById("typed");
+  const count = document.getElementById("count");
+  const show = (s) => { typed.textContent = s; count.textContent = s.split(/\s+/).filter(Boolean).length + " words"; };
+  if (reduce) show(text);
+  else { let i = 0; setTimeout(function tick() { show(text.slice(0, ++i)); if (i < text.length) setTimeout(tick, 22); }, 700); }
+
+  // Reveal on scroll
+  const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))), { threshold: .15 });
+  document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+</script>
+</body>
+</html>

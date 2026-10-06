@@ -1,0 +1,9 @@
+# Secrets: never commit an API key
+*api_key*
+*.key
+.env*
+
+# Local tooling and build output
+.claude/
+dist/
+node_modules/

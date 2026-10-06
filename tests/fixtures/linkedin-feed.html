@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Feed | LinkedIn (test fixture)</title>
+<!-- Mimics LinkedIn's feed with the messaging overlay: class names follow LinkedIn's msg-* markup.
+     People and companies are fictional. -->
+<style>
+  body { margin: 0; background: #f4f2ee; font: 14px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; color: rgba(0,0,0,.9); }
+  .global-nav { height: 52px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+  .global-nav__logo { font-weight: 800; color: #0a66c2; font-size: 22px; }
+  .global-nav__me-photo { width: 24px; height: 24px; border-radius: 50%; background: #9db3c8; }
+  .scaffold-layout__main { width: 555px; margin: 24px 0 0 300px; }
+  .feed-shared-update-v2 { background: #fff; border-radius: 8px; border: 1px solid #e0dfdc; padding: 16px; margin-bottom: 12px; }
+  .ql-editor { min-height: 36px; border: 1px solid #ccc; border-radius: 18px; padding: 8px 12px; margin-top: 12px; }
+  .msg-overlay-container { position: fixed; right: 16px; bottom: 0; display: flex; flex-direction: row-reverse; align-items: flex-end; gap: 8px; }
+  .msg-overlay-list-bubble { width: 288px; height: 400px; background: #fff; border-radius: 8px 8px 0 0; box-shadow: 0 0 0 1px rgba(0,0,0,.15), 0 4px 12px rgba(0,0,0,.15); }
+  .msg-overlay-bubble-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e8e8e8; font-weight: 600; }
+  .msg-overlay-bubble-header__title { font-size: 14px; margin: 0; }
+  .msg-overlay-bubble-header__title a { color: inherit; text-decoration: none; }
+  .msg-conversation-listitem { list-style: none; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .msg-overlay-conversation-bubble { width: 400px; height: 560px; background: #fff; border-radius: 8px 8px 0 0; box-shadow: 0 0 0 1px rgba(0,0,0,.15), 0 4px 12px rgba(0,0,0,.15); display: flex; flex-direction: column; }
+  .msg-overlay-conversation-bubble__content-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .msg-s-message-list-container { flex: 1; min-height: 0; }
+  .msg-s-message-list { height: 100%; overflow-y: auto; padding: 8px 12px; }
+  .msg-s-profile-card { padding: 8px 0 12px; border-bottom: 1px solid #eee; margin-bottom: 8px; }
+  .artdeco-entity-lockup__title { font-weight: 600; }
+  .artdeco-entity-lockup__subtitle { color: rgba(0,0,0,.6); font-size: 13px; }
+  .msg-s-message-list-content { margin: 0; padding: 0; list-style: none; }
+  .msg-s-message-list__time-heading { display: block; text-align: center; font-size: 12px; font-weight: 600; color: rgba(0,0,0,.6); margin: 8px 0; }
+  .msg-s-message-group__meta { display: flex; gap: 6px; align-items: baseline; }
+  .msg-s-message-group__name { font-weight: 600; }
+  .msg-s-message-group__timestamp { font-size: 12px; color: rgba(0,0,0,.6); }
+  .msg-s-event-listitem__subject { font-size: 14px; margin: 4px 0; }
+  .msg-s-event-listitem__body { margin: 4px 0 10px; }
+  .msg-form { border-top: 1px solid #e8e8e8; }
+  .msg-form__message-texteditor { position: relative; margin: 8px 12px; }
+  .msg-form__contenteditable { min-height: 72px; max-height: 160px; overflow: auto; background: #f4f2ee; border-radius: 8px; padding: 10px 12px; outline: none; }
+  .msg-form__contenteditable p { margin: 0; }
+  .msg-form__footer { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; }
+  .msg-form__left-actions { display: flex; align-items: center; gap: 2px; }
+  .msg-form__left-actions > button:not(.lra-draft-btn) { width: 32px; height: 32px; border: 0; background: none; border-radius: 50%; color: rgba(0,0,0,.6); font-size: 15px; }
+  .msg-form__send-button { border: 0; border-radius: 16px; padding: 6px 16px; background: #0a66c2; color: #fff; font-weight: 600; }
+  .msg-form__send-button:disabled { background: #e8e8e8; color: rgba(0,0,0,.35); }
+</style>
+</head>
+<body>
+  <header class="global-nav">
+    <span class="global-nav__logo">in</span>
+    <button class="global-nav__primary-link-me-menu-trigger" style="border:0;background:none">
+      <img class="global-nav__me-photo" alt="Alex Morgan" src="data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==">
+    </button>
+  </header>
+
+  <main class="scaffold-layout__main">
+    <div class="feed-shared-update-v2">
+      <p>Excited to share that our team just shipped a new payments dashboard.</p>
+      <form class="comments-comment-box__form">
+        <div class="ql-editor" contenteditable="true" role="textbox" aria-label="Add a comment…"><p><br></p></div>
+      </form>
+    </div>
+    <div class="feed-shared-update-v2" style="height:220px"></div>
+  </main>
+
+  <aside id="msg-overlay" class="msg-overlay-container">
+    <div class="msg-overlay-list-bubble">
+      <header class="msg-overlay-bubble-header">Messaging</header>
+      <ul style="margin:0;padding:0">
+        <li class="msg-conversation-listitem"><strong>Daniel Reyes</strong><br>InMail · JOB OPPORTUNITY FOR YOU…</li>
+        <li class="msg-conversation-listitem"><strong>Priya Nair</strong><br>Cut code review time by 60%…</li>
+      </ul>
+    </div>
+
+    <div class="msg-overlay-conversation-bubble msg-overlay-conversation-bubble--is-active" id="bubble-daniel">
+      <header class="msg-overlay-bubble-header">
+        <div class="msg-overlay-bubble-header__details">
+          <h2 class="msg-overlay-bubble-header__title"><a href="/in/daniel-reyes-000/"><span>Daniel Reyes</span></a></h2>
+        </div>
+        <div class="msg-overlay-bubble-header__controls"><button aria-label="Close your conversation with Daniel Reyes" style="border:0;background:none">✕</button></div>
+      </header>
+      <div class="msg-overlay-conversation-bubble__content-wrapper">
+        <div class="msg-s-message-list-container">
+          <div class="msg-s-message-list full-width scrollable">
+            <div class="msg-s-profile-card">
+              <div class="artdeco-entity-lockup">
+                <div class="artdeco-entity-lockup__title">Daniel Reyes · 3rd</div>
+                <div class="artdeco-entity-lockup__subtitle">Recruiting Manager at Northbridge Talent Group</div>
+              </div>
+            </div>
+            <ul class="msg-s-message-list-content list-style-none full-width">
+              <li class="msg-s-message-list__event clearfix">
+                <time class="msg-s-message-list__time-heading">TUESDAY</time>
+                <div class="msg-s-event-listitem msg-s-event-listitem--other">
+                  <div class="msg-s-message-group__meta">
+                    <span class="msg-s-message-group__name">Daniel Reyes</span>
+                    <time class="msg-s-message-group__timestamp">11:52 AM</time>
+                  </div>
+                  <div class="msg-s-event-listitem__message-bubble">
+                    <h3 class="msg-s-event-listitem__subject">JOB OPPORTUNITY FOR YOU!-Python Engineer-Pre-IPO FinTech-Full-Time-Competitive Salary/Bonus/Benefits/Equity</h3>
+                    <p class="msg-s-event-listitem__body" id="daniel-body">Hi Alex,<br><br>I came across your profile earlier, I think you might be a great match for this role I have with a financial client here in the NYC area. If interested in discussing and learning more please contact me at 555-0142 or daniel@example.com<br><br>Responsibilities<br>• Design and implement a private and permissioned distributed ledger using DAML or Canton and other open-source blockchain frameworks<br>• Build and maintain a RESTful API using Python and FastAPI<br><br>Qualifications<br>• Experience with DAML, Solidity, or other blockchain programming languages<br>• Experience building APIs for large scale applications using AWS</p>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <form class="msg-form">
+          <div class="msg-form__msg-content-container">
+            <div class="msg-form__message-texteditor">
+              <div class="msg-form__placeholder" data-placeholder="Write a message…"></div>
+              <div class="msg-form__contenteditable" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Write a message…"><p><br></p></div>
+            </div>
+          </div>
+          <footer class="msg-form__footer">
+            <div class="msg-form__left-actions">
+              <button type="button" aria-label="Attach an image">▣</button>
+              <button type="button" aria-label="Attach a file">⎘</button>
+              <button type="button" aria-label="Open GIF Keyboard">G</button>
+              <button type="button" aria-label="Open Emoji Keyboard">☺</button>
+            </div>
+            <div class="msg-form__right-actions"><button class="msg-form__send-button" type="submit" disabled>Send</button></div>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <div class="msg-overlay-conversation-bubble" id="bubble-priya">
+      <header class="msg-overlay-bubble-header">
+        <div class="msg-overlay-bubble-header__details">
+          <h2 class="msg-overlay-bubble-header__title"><a href="/in/priya-nair-000/"><span>Priya Nair</span></a></h2>
+        </div>
+        <div class="msg-overlay-bubble-header__controls"><button aria-label="Close your conversation with Priya Nair" style="border:0;background:none">✕</button></div>
+      </header>
+      <div class="msg-overlay-conversation-bubble__content-wrapper">
+        <div class="msg-s-message-list-container">
+          <div class="msg-s-message-list full-width scrollable">
+            <div class="msg-s-profile-card">
+              <div class="artdeco-entity-lockup">
+                <div class="artdeco-entity-lockup__title">Priya Nair · 2nd</div>
+                <div class="artdeco-entity-lockup__subtitle">Founder at ShipFast AI</div>
+              </div>
+            </div>
+            <ul class="msg-s-message-list-content list-style-none full-width">
+              <li class="msg-s-message-list__event clearfix">
+                <time class="msg-s-message-list__time-heading">FRIDAY</time>
+                <div class="msg-s-event-listitem">
+                  <div class="msg-s-message-group__meta">
+                    <span class="msg-s-message-group__name">Priya Nair</span>
+                    <time class="msg-s-message-group__timestamp">1:05 PM</time>
+                  </div>
+                  <p class="msg-s-event-listitem__body">Hi Alex, I'm the founder of ShipFast AI. We help engineering teams cut code review time by 60% using AI agents.</p>
+                </div>
+              </li>
+              <li class="msg-s-message-list__event clearfix">
+                <div class="msg-s-event-listitem">
+                  <p class="msg-s-event-listitem__body">Would you be open to a 15-minute demo next week?</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <form class="msg-form">
+          <div class="msg-form__msg-content-container">
+            <div class="msg-form__message-texteditor">
+              <div class="msg-form__placeholder" data-placeholder="Write a message…"></div>
+              <div class="msg-form__contenteditable" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Write a message…"><p><br></p></div>
+            </div>
+          </div>
+          <footer class="msg-form__footer">
+            <div class="msg-form__left-actions">
+              <button type="button" aria-label="Attach an image">▣</button>
+              <button type="button" aria-label="Attach a file">⎘</button>
+              <button type="button" aria-label="Open GIF Keyboard">G</button>
+              <button type="button" aria-label="Open Emoji Keyboard">☺</button>
+            </div>
+            <div class="msg-form__right-actions"><button class="msg-form__send-button" type="submit" disabled>Send</button></div>
+          </footer>
+        </form>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    // Stand-in for LinkedIn's editor logic: Send is enabled only when the box has text, and a submit is recorded.
+    window.__sent = [];
+    document.addEventListener("input", (e) => {
+      const form = e.target.closest?.("form.msg-form");
+      if (form) form.querySelector(".msg-form__send-button").disabled = !e.target.innerText.trim();
+    });
+    document.addEventListener("submit", (e) => {
+      e.preventDefault();
+      window.__sent.push(e.target.querySelector(".msg-form__contenteditable").innerText);
+    });
+  </script>
+</body>
+</html>

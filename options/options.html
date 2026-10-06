@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinkedIn Reply Assistant · Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header class="page-head">
+      <h1>LinkedIn Reply Assistant</h1>
+      <p>Drafts replies to your LinkedIn messages. It only ever fills in the message box; you review and press Send.</p>
+    </header>
+
+    <section class="card how">
+      <h2>How to draft</h2>
+      <ol>
+        <li>Click <strong>✨ Draft</strong> in any LinkedIn chat's toolbar. It reads that conversation.</li>
+        <li>Or press <kbd id="shortcut">Alt+R</kbd> or click the toolbar icon to draft for the chat you're in.</li>
+        <li>Or highlight any text (a message, a profile, a post) and right-click → <em>Draft a reply with AI</em>.</li>
+      </ol>
+      <button type="button" class="btn subtle" id="btn-shortcuts">Change keyboard shortcut</button>
+    </section>
+
+    <section class="card">
+      <h2>Groq connection</h2>
+      <div class="field">
+        <label for="apiKey">API key</label>
+        <div class="inline">
+          <input type="password" id="apiKey" placeholder="gsk_…" autocomplete="off" spellcheck="false">
+          <button type="button" class="btn subtle" id="btn-reveal" aria-pressed="false">Show</button>
+        </div>
+        <p class="hint">Stored only in this browser. It's sent to Groq, and nowhere else, when you draft. Get one at console.groq.com/keys.</p>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label for="model">Model</label>
+          <select id="model"></select>
+        </div>
+        <div class="field">
+          <label for="reasoningEffort">Reasoning</label>
+          <select id="reasoningEffort"></select>
+        </div>
+      </div>
+      <p class="hint">On Groq's free plan each model allows about 8,000 tokens a minute, roughly 3 drafts. When the chosen model is busy, the other one is used automatically.</p>
+      <div class="inline">
+        <button type="button" class="btn" id="btn-test">Test connection</button>
+        <span id="test-status" role="status"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>About you</h2>
+      <p class="lead">The assistant only states facts about you that appear here, so the more you fill in, the more personal the replies.</p>
+      <div class="grid">
+        <div class="field">
+          <label for="name">Your name</label>
+          <input id="name" placeholder="e.g. Sam Rivera">
+          <p class="hint">Also used to tell your messages apart from theirs.</p>
+        </div>
+        <div class="field">
+          <label for="headline">Headline or role</label>
+          <input id="headline" placeholder="e.g. Senior Full Stack Engineer">
+        </div>
+      </div>
+      <div class="field">
+        <label for="skills">Skills and experience</label>
+        <textarea id="skills" rows="3" placeholder="e.g. 8 years with Python/Django and React. Built payment systems at two fintech startups."></textarea>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label for="basedIn">Where you're based</label>
+          <input id="basedIn" placeholder="e.g. New York, USA (Eastern Time)">
+        </div>
+        <div class="field">
+          <label for="workRegions">Where you can work</label>
+          <input id="workRegions" placeholder="e.g. US and Canada employers, or anywhere as a contractor">
+          <p class="hint">Used to spot remote roles limited to regions you can't work from.</p>
+        </div>
+        <div class="field">
+          <label for="workPreference">Work preference</label>
+          <input id="workPreference" placeholder="Fully remote roles only">
+        </div>
+        <div class="field">
+          <label for="minPay">Minimum pay</label>
+          <input id="minPay" placeholder="e.g. $150k base, or $75/hour">
+          <p class="hint">Only mentioned when an offer is below it.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="links">Links</label>
+        <textarea id="links" rows="3" placeholder="GitHub: https://github.com/you&#10;Portfolio: https://you.dev&#10;Resume: https://…"></textarea>
+        <p class="hint">One per line. Shared only when they help, e.g. when someone asks for your resume.</p>
+      </div>
+      <div class="field">
+        <label for="questions">Questions to ask about roles</label>
+        <textarea id="questions" rows="2"></textarea>
+        <p class="hint">It asks at most two per reply and skips anything already answered.</p>
+      </div>
+      <div class="field">
+        <label for="techWords">Extra technologies to spot</label>
+        <input id="techWords" placeholder="e.g. Canton, Temporal, Twilio">
+        <p class="hint">Common ones (Python, TypeScript, Django, AWS, React, Next.js…) are already recognised. When a message
+          names two or more, the panel lists them and the reply won't ask about the tech stack.</p>
+      </div>
+      <div class="field">
+        <label for="signature">Signature</label>
+        <textarea id="signature" rows="2" placeholder="e.g. Best,&#10;Sam"></textarea>
+        <p class="hint">Added to the end of every reply. Leave empty for none.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Writing style</h2>
+      <div class="field">
+        <label for="style">Rules for every reply</label>
+        <textarea id="style" rows="3"></textarea>
+        <p class="hint">Length, tone, phrases to avoid. One rule per line works well.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h2>Categories and templates</h2>
+        <button type="button" class="btn" id="btn-add-category">+ Add category</button>
+      </div>
+      <p class="lead">For each message the assistant picks one category, then follows its template. A template can be instructions ("Thank them and…") or a sample message.</p>
+      <details class="placeholders">
+        <summary>Placeholders you can use</summary>
+        <p><strong>Filled from your profile:</strong> <span id="ph-profile"></span></p>
+        <p><strong>Filled from the conversation:</strong> <span id="ph-message"></span></p>
+      </details>
+      <div id="categories"></div>
+    </section>
+
+    <section class="card danger-zone">
+      <h2>Reset</h2>
+      <p class="lead">Restore the default profile, style and categories. Your API key is kept.</p>
+      <button type="button" class="btn danger" id="btn-reset">Reset to defaults</button>
+    </section>
+  </main>
+
+  <div class="save-bar" id="save-bar">
+    <span id="save-status" role="status">All changes saved</span>
+    <button type="button" class="btn primary" id="btn-save">Save changes</button>
+  </div>
+
+  <template id="category-template">
+    <details class="category">
+      <summary>
+        <span class="cat-title"></span>
+        <span class="cat-tag"></span>
+        <label class="toggle" title="Use this category">
+          <input type="checkbox" class="cat-enabled">
+          <span>On</span>
+        </label>
+      </summary>
+      <div class="cat-body">
+        <div class="field">
+          <label>Name</label>
+          <input class="cat-label" maxlength="40">
+        </div>
+        <div class="field">
+          <label>Use when</label>
+          <textarea class="cat-when" rows="2" placeholder="e.g. Someone asks me to speak at an event or on a podcast."></textarea>
+        </div>
+        <div class="field">
+          <label>Reply template</label>
+          <textarea class="cat-reply" rows="3" placeholder="e.g. Hi {first_name}, thank you for the invitation to speak at {company}…"></textarea>
+        </div>
+        <div class="cat-actions">
+          <button type="button" class="btn subtle cat-reset">Reset to default</button>
+          <button type="button" class="btn danger cat-delete">Delete category</button>
+        </div>
+      </div>
+    </details>
+  </template>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+/* The "Draft" button added to LinkedIn's message box toolbar. The reply panel itself lives in a shadow root. */
+button.lra-draft-btn.lra-draft-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  margin: 0 2px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: #0a66c2;
+  font: 600 14px/1 -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+button.lra-draft-btn.lra-draft-btn:hover {
+  background: rgba(10, 102, 194, 0.1);
+}
+button.lra-draft-btn.lra-draft-btn:focus-visible {
+  outline: 2px solid #0a66c2;
+  outline-offset: 1px;
+}
+button.lra-draft-btn.lra-draft-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+#lra-panel-host {
+  position: fixed;
+  z-index: 2147483000;
+  top: 0;
+  left: 0;
+}
+#lra-panel-host[hidden] {
+  display: none;
+}

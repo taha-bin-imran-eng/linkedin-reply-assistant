@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Reply Assistant",
+  "version": "2.0.0",
+  "description": "Drafts replies to LinkedIn messages with Groq (gpt-oss-120b), using your profile, rules and editable templates. It never sends anything for you.",
+  "permissions": ["storage", "contextMenus", "scripting"],
+  "host_permissions": ["https://api.groq.com/*", "https://*.linkedin.com/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.linkedin.com/*"],
+      "js": ["content/linkedin-dom.js", "content/panel.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Draft a reply to this LinkedIn chat (Alt+R)",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "commands": {
+    "draft-reply": {
+      "suggested_key": { "default": "Alt+R" },
+      "description": "Draft a reply to the open LinkedIn conversation"
+    }
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

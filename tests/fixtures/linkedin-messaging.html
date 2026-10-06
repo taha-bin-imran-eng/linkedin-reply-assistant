@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Messaging | LinkedIn (test fixture)</title>
+<!-- Mimics the full-page messaging view (linkedin.com/messaging/thread/...). People and companies are fictional. -->
+<style>
+  body { margin: 0; background: #f4f2ee; font: 14px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  .global-nav { height: 52px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+  .global-nav__me-photo { width: 24px; height: 24px; border-radius: 50%; background: #9db3c8; }
+  .scaffold-layout__main { display: flex; width: 1128px; height: calc(100vh - 76px); margin: 12px auto; background: #fff; border-radius: 8px; border: 1px solid #e0dfdc; }
+  .msg-conversations-container { width: 360px; border-right: 1px solid #e8e8e8; }
+  .msg-convo-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .msg-title-bar { padding: 12px 16px; border-bottom: 1px solid #e8e8e8; }
+  .msg-entity-lockup__entity-title { margin: 0; font-size: 16px; }
+  .msg-s-message-list { flex: 1; overflow-y: auto; padding: 8px 16px; }
+  .msg-s-message-list-content { list-style: none; margin: 0; padding: 0; }
+  .msg-s-message-list__time-heading { display: block; text-align: center; font-size: 12px; font-weight: 600; color: rgba(0,0,0,.6); margin: 8px 0; }
+  .msg-s-message-group__name { font-weight: 600; margin-right: 6px; }
+  .msg-s-message-group__timestamp { font-size: 12px; color: rgba(0,0,0,.6); }
+  .msg-s-event-listitem__body { margin: 4px 0 12px; }
+  .msg-form { border-top: 1px solid #e8e8e8; padding: 8px 16px; }
+  .msg-form__contenteditable { min-height: 80px; background: #f4f2ee; border-radius: 8px; padding: 10px 12px; outline: none; }
+  .msg-form__contenteditable p { margin: 0; }
+  .msg-form__footer { display: flex; justify-content: space-between; align-items: center; padding-top: 6px; }
+  .msg-form__send-button { border: 0; border-radius: 16px; padding: 6px 16px; background: #0a66c2; color: #fff; font-weight: 600; }
+  .msg-form__send-button:disabled { background: #e8e8e8; color: rgba(0,0,0,.35); }
+</style>
+</head>
+<body>
+  <header class="global-nav">
+    <span style="font-weight:800;color:#0a66c2;font-size:22px">in</span>
+    <img class="global-nav__me-photo" alt="Alex Morgan" src="data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==">
+  </header>
+  <main class="scaffold-layout__main">
+    <div class="msg-conversations-container"><p style="padding:12px">Sarah Khan · Great to hear…</p></div>
+    <div class="msg-convo-wrapper">
+      <div class="msg-title-bar"><h2 class="msg-entity-lockup__entity-title">Sarah Khan</h2></div>
+      <div class="msg-s-message-list">
+        <div class="msg-s-profile-card">
+          <div class="artdeco-entity-lockup__title">Sarah Khan · 2nd</div>
+          <div class="artdeco-entity-lockup__subtitle">Talent Partner at Brightpath</div>
+        </div>
+        <ul class="msg-s-message-list-content">
+          <li class="msg-s-message-list__event">
+            <time class="msg-s-message-list__time-heading">SEP 15</time>
+            <div class="msg-s-event-listitem">
+              <div class="msg-s-message-group__meta"><span class="msg-s-message-group__name">Sarah Khan</span><time class="msg-s-message-group__timestamp">9:02 AM</time></div>
+              <p class="msg-s-event-listitem__body">Hi Alex, I wanted to reach out to you about a fully remote Staff Engineer opening at Brightpath. We're building payments infrastructure in Go and Postgres, and the team is spread across US time zones. The base salary range is $180-210k.</p>
+            </div>
+          </li>
+          <li class="msg-s-message-list__event">
+            <div class="msg-s-event-listitem">
+              <div class="msg-s-message-group__meta"><span class="msg-s-message-group__name">Alex Morgan</span><time class="msg-s-message-group__timestamp">10:15 AM</time></div>
+              <p class="msg-s-event-listitem__body">Hi Sarah, thanks for reaching out. This sounds interesting and I'm open to learning more. Could you share more about the team and the interview process?</p>
+            </div>
+          </li>
+          <li class="msg-s-message-list__event">
+            <time class="msg-s-message-list__time-heading">SEP 16</time>
+            <div class="msg-s-event-listitem">
+              <div class="msg-s-message-group__meta"><span class="msg-s-message-group__name">Sarah Khan</span><time class="msg-s-message-group__timestamp">8:40 AM</time></div>
+              <p class="msg-s-event-listitem__body">Great to hear! The team is 12 engineers across the US. The process is a recruiter screen, a technical interview and a system design round. Could you share your availability for a 20-minute call this week?</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <form class="msg-form">
+        <div class="msg-form__message-texteditor">
+          <div class="msg-form__contenteditable" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Write a message…"><p><br></p></div>
+        </div>
+        <footer class="msg-form__footer">
+          <div class="msg-form__left-actions"><button type="button" aria-label="Attach an image" style="border:0;background:none">▣</button></div>
+          <div class="msg-form__right-actions"><button class="msg-form__send-button" type="submit" disabled>Send</button></div>
+        </footer>
+      </form>
+    </div>
+  </main>
+  <script>
+    document.addEventListener("input", (e) => {
+      const form = e.target.closest?.("form.msg-form");
+      if (form) form.querySelector(".msg-form__send-button").disabled = !e.target.innerText.trim();
+    });
+  </script>
+</body>
+</html>

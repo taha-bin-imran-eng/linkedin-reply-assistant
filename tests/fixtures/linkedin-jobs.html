@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Jobs | LinkedIn (test fixture)</title>
+<!-- Mimics LinkedIn's newer pages (e.g. /jobs/search-results/), where the chat pop-ups are rendered where
+     document.querySelectorAll can't see them. Three pop-ups: in an open shadow root, in a closed shadow root
+     (filled in late), and in a same-origin iframe. People and companies are fictional. -->
+<style>
+  body { margin: 0; background: #f4f2ee; font: 14px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  .global-nav { height: 52px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+  .global-nav__me-photo { width: 24px; height: 24px; border-radius: 50%; background: #9db3c8; }
+  .jobs { width: 640px; margin: 24px 0 0 40px; }
+  .job-card { background: #fff; border: 1px solid #e0dfdc; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .msg-overlay-list-bubble { position: fixed; right: 16px; bottom: 0; width: 288px; height: 420px; background: #fff; border-radius: 8px 8px 0 0; box-shadow: 0 0 0 1px rgba(0,0,0,.15), 0 4px 12px rgba(0,0,0,.15); padding: 10px 12px; box-sizing: border-box; font-weight: 600; }
+  #chat-frame { position: fixed; left: 8px; bottom: 0; width: 368px; height: 520px; border: 0; }
+</style>
+</head>
+<body>
+  <header class="global-nav">
+    <span style="font-weight:800;color:#0a66c2;font-size:22px">in</span>
+    <img class="global-nav__me-photo" alt="Alex Morgan" src="data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==">
+  </header>
+  <main class="jobs">
+    <div class="job-card"><strong>Appian Consultant</strong><br>Deft · United States (Remote)</div>
+    <div class="job-card"><strong>Senior Appian Developer</strong><br>ICF · Reston, VA</div>
+  </main>
+  <div class="msg-overlay-list-bubble">Messaging</div>
+
+  <!-- Hosts for the chat pop-ups -->
+  <div id="interop-outlet" data-testid="interop-shadowdom"></div>
+  <div id="closed-outlet"></div>
+  <iframe id="chat-frame" title="chat"></iframe>
+
+  <script>
+    const BUBBLE_CSS = `
+      .msg-overlay-conversation-bubble { position: fixed; bottom: 0; width: 368px; height: 520px; background: #fff; border-radius: 8px 8px 0 0;
+        box-shadow: 0 0 0 1px rgba(0,0,0,.15), 0 4px 12px rgba(0,0,0,.15); display: flex; flex-direction: column; font: 14px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; color: rgba(0,0,0,.9); }
+      .msg-overlay-bubble-header { padding: 8px 12px; border-bottom: 1px solid #e8e8e8; font-weight: 600; }
+      .msg-overlay-bubble-header__title { font-size: 14px; margin: 0; }
+      .msg-s-message-list { flex: 1; overflow-y: auto; padding: 8px 12px; }
+      .msg-s-message-list-content { margin: 0; padding: 0; list-style: none; }
+      .msg-s-message-group__name { font-weight: 600; margin-right: 6px; }
+      .msg-s-message-group__timestamp { font-size: 12px; color: rgba(0,0,0,.6); }
+      .msg-form { border-top: 1px solid #e8e8e8; }
+      .msg-form__contenteditable { min-height: 64px; margin: 8px 12px; background: #f4f2ee; border-radius: 8px; padding: 10px 12px; outline: none; }
+      .msg-form__contenteditable p { margin: 0; }
+      .msg-form__footer { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; }
+      .msg-form__left-actions { display: flex; align-items: center; gap: 2px; }
+      .msg-form__left-actions > button:not(.lra-draft-btn) { width: 32px; height: 32px; border: 0; background: none; color: rgba(0,0,0,.6); }
+      .msg-form__send-button { border: 0; border-radius: 16px; padding: 6px 16px; background: #0a66c2; color: #fff; font-weight: 600; }
+      .msg-form__send-button:disabled { background: #e8e8e8; color: rgba(0,0,0,.35); }`;
+
+    const bubble = ({ id, right, left, name, time, body }) => `
+      <div class="msg-overlay-conversation-bubble" id="${id}" style="${right != null ? `right:${right}px` : `left:${left}px`}">
+        <header class="msg-overlay-bubble-header"><h2 class="msg-overlay-bubble-header__title"><span>${name}</span></h2></header>
+        <div class="msg-s-message-list">
+          <ul class="msg-s-message-list-content">
+            <li class="msg-s-message-list__event">
+              <div class="msg-s-event-listitem">
+                <div class="msg-s-message-group__meta"><span class="msg-s-message-group__name">${name}</span><time class="msg-s-message-group__timestamp">${time}</time></div>
+                <p class="msg-s-event-listitem__body">${body}</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <form class="msg-form">
+          <div class="msg-form__contenteditable" contenteditable="true" role="textbox" aria-label="Write a message…"><p><br></p></div>
+          <footer class="msg-form__footer">
+            <div class="msg-form__left-actions"><button type="button" aria-label="Attach an image">▣</button><button type="button" aria-label="Open Emoji Keyboard">☺</button></div>
+            <div class="msg-form__right-actions"><button class="msg-form__send-button" type="submit" disabled>Send</button></div>
+          </footer>
+        </form>
+      </div>`;
+
+    // Stand-in for LinkedIn's editor logic: Send turns on when the box has text.
+    const enableSend = (e) => {
+      const form = e.composedPath()[0].closest?.("form.msg-form");
+      if (form) form.querySelector(".msg-form__send-button").disabled = !form.querySelector(".msg-form__contenteditable").innerText.trim();
+    };
+
+    // 1. Open shadow root, like LinkedIn's interop outlet.
+    const openRoot = document.getElementById("interop-outlet").attachShadow({ mode: "open" });
+    openRoot.innerHTML = `<style>${BUBBLE_CSS}</style>` + bubble({
+      id: "bubble-richard", right: 312, name: "Richard Hindmarch", time: "4:26 AM",
+      body: "Hi Alex,<br><br>Following up on my previous message - do you happen to be open to new job opportunities at this time?<br><br>Thanks,<br>Richard",
+    });
+    openRoot.addEventListener("input", enableSend);
+
+    // 2. Closed shadow root whose chat arrives after the page has loaded.
+    const closedRoot = document.getElementById("closed-outlet").attachShadow({ mode: "closed" });
+    window.__closedRoot = closedRoot; // test hook: page scripts can't otherwise reach a closed root
+    setTimeout(() => {
+      closedRoot.innerHTML = `<style>${BUBBLE_CSS}</style>` + bubble({
+        id: "bubble-lena", right: 688, name: "Lena Fischer", time: "9:45 AM",
+        body: "Hi Alex, my client is hiring a Senior Python Engineer. The role is fully remote, but candidates must be based in the EU.",
+      });
+      closedRoot.addEventListener("input", enableSend);
+    }, 1500);
+
+    // 3. Same-origin iframe.
+    const frameDoc = document.getElementById("chat-frame").contentDocument;
+    frameDoc.open();
+    frameDoc.write(`<!DOCTYPE html><html><head><style>body{margin:0} ${BUBBLE_CSS}</style></head><body>${bubble({
+      id: "bubble-omar", left: 0, name: "Omar Haddad", time: "3:40 PM",
+      body: "Hello Alex, we have a Senior Software Engineer opening at our Dubai office. It's a hybrid setup with 3 days onsite.",
+    })}</body></html>`);
+    frameDoc.close();
+    frameDoc.addEventListener("input", enableSend);
+  </script>
+</body>
+</html>
