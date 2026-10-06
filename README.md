@@ -113,3 +113,7 @@ node tests/eval.mjs --keyfile=PATH_TO_KEY    # 19 realistic conversations agains
 
 `e2e.mjs` stubs Groq unless you pass `--live --keyfile=PATH`. The key file holds just your `gsk_…` key. Keep it outside
 this folder so it's never packaged or shared with the extension.
+
+---
+
+Built by [Taha Bin Imran](https://github.com/taha-bin-imran-eng).
